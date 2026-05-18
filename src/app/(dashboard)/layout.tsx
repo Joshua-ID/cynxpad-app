@@ -2,6 +2,14 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 
+export const metadata = {
+  title: "Cynxpad | The Ink of the Future",
+  description: "A premium platform for writers, readers, and ghostwriters.",
+  openGraph: {
+    images: ["/og-image.png"],
+  },
+};
+
 export default async function DashboardLayout({
   children,
 }: {
