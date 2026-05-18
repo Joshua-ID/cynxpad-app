@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { Landmark, History, Wallet, ArrowUpRight } from "lucide-react";
 import { PayoutForm } from "@/features/marketplace/components/payout-form";
+import { TransactionTable } from "@/features/marketplace/components/transaction-table";
 
 export default async function BillingPage() {
   const supabase = await createClient();
@@ -21,6 +22,66 @@ export default async function BillingPage() {
     .select("amount")
     .eq("seller_id", user?.id)
     .eq("status", "completed");
+
+  // 1. Fetch Post Sales
+  const { data: storySales } = await supabase
+    .from("purchases")
+    .select(
+      `
+      id,
+      amount,
+      created_at,
+      post:posts!inner(title, author_id)
+    `,
+    )
+    .eq("posts.author_id", user?.id);
+
+  // 2. Fetch Gig Sales
+  const { data: gigSales } = await supabase
+    .from("contracts")
+    .select(
+      `
+      id,
+      amount,
+      created_at,
+      status,
+      gig:gigs!inner(title, seller_id)
+    `,
+    )
+    .eq("gigs.seller_id", user?.id)
+    .eq("status", "completed");
+
+  const allTransactions = [
+    ...(storySales?.map((s) => {
+      // Explicitly type the nested post object
+      const postData = s.post as unknown as {
+        title: string;
+        author_id: string;
+      } | null;
+      return {
+        id: s.id,
+        type: "Story Sale",
+        title: postData?.title || "Untitled Story",
+        amount: s.amount,
+        date: s.created_at,
+      };
+    }) || []),
+
+    ...(gigSales?.map((g) => {
+      // Explicitly type the nested gig object
+      const gigData = g.gig as unknown as {
+        title: string;
+        seller_id: string;
+      } | null;
+      return {
+        id: g.id,
+        type: "Gig Delivery",
+        title: gigData?.title || "Untitled Gig",
+        amount: g.amount,
+        date: g.created_at,
+      };
+    }) || []),
+  ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
   const availableBalance =
     contracts?.reduce((sum, c) => sum + Number(c.amount), 0) || 0;
@@ -61,14 +122,13 @@ export default async function BillingPage() {
           </div>
 
           {/* TRANSACTION HISTORY PREVIEW */}
+
           <div className="rounded-3xl border border-zinc-100 bg-white p-8">
             <div className="flex items-center gap-2 mb-6 text-zinc-900 font-bold">
               <History className="h-5 w-5" />
-              <h3>Recent Transactions</h3>
+              <h3>Transaction History</h3>
             </div>
-            <p className="text-sm text-zinc-400 italic">
-              No recent transactions to show.
-            </p>
+            <TransactionTable transactions={allTransactions} />
           </div>
         </div>
 
