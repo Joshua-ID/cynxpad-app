@@ -1,4 +1,5 @@
 "use client";
+
 import { useState } from "react";
 import { Heart, MessageCircle, Repeat2, Bookmark } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
@@ -6,8 +7,8 @@ import { createClient } from "@/lib/supabase/client";
 interface EngagementBarProps {
   postId: string;
   initialLikes: number;
-  initialComments: number; // Added tracking
-  initialReposts: number; // Added tracking
+  initialComments: number;
+  initialReposts: number;
   hasLiked: boolean;
   hasBookmarked: boolean;
   hasReposted: boolean;
@@ -18,70 +19,69 @@ export function EngagementBar({
   initialLikes,
   initialComments,
   initialReposts,
-  hasLiked: initialHasLiked,
-  hasBookmarked: initialHasBookmarked,
-  hasReposted: initialHasReposted,
+  hasLiked,
+  hasBookmarked,
+  hasReposted,
 }: EngagementBarProps) {
   const supabase = createClient();
-  const [liked, setLiked] = useState(initialHasLiked);
+  const [liked, setLiked] = useState(hasLiked);
   const [likesCount, setLikesCount] = useState(initialLikes);
-  const [bookmarked, setBookmarked] = useState(initialHasBookmarked);
-  const [reposted, setReposted] = useState(initialHasReposted);
+  const [reposted, setReposted] = useState(hasReposted);
   const [repostsCount, setRepostsCount] = useState(initialReposts);
+  const [bookmarked, setBookmarked] = useState(hasBookmarked);
 
-  async function toggleLike() {
+  async function handleLike() {
     const {
       data: { user },
     } = await supabase.auth.getUser();
-    if (!user) return alert("Log in to interact!");
+    if (!user) return alert("Please login to like this post.");
+
+    setLiked(!liked);
+    setLikesCount((prev) => (liked ? Math.max(0, prev - 1) : prev + 1));
 
     if (liked) {
-      setLiked(false);
-      setLikesCount((p) => Math.max(0, p - 1));
       await supabase
         .from("likes")
         .delete()
         .eq("post_id", postId)
         .eq("user_id", user.id);
     } else {
-      setLiked(true);
-      setLikesCount((p) => p + 1);
       await supabase
         .from("likes")
         .insert({ post_id: postId, user_id: user.id });
     }
   }
 
-  async function toggleRepost() {
+  async function handleRepost() {
     const {
       data: { user },
     } = await supabase.auth.getUser();
-    if (!user) return alert("Log in to repost!");
+    if (!user) return alert("Please login to repost this.");
+
+    setReposted(!reposted);
+    setRepostsCount((prev) => (reposted ? Math.max(0, prev - 1) : prev + 1));
 
     if (reposted) {
-      setReposted(false);
-      setRepostsCount((p) => Math.max(0, p - 1));
       await supabase
         .from("reposts")
         .delete()
         .eq("post_id", postId)
         .eq("user_id", user.id);
     } else {
-      setReposted(true);
-      setRepostsCount((p) => p + 1);
       await supabase
         .from("reposts")
         .insert({ post_id: postId, user_id: user.id });
     }
   }
 
-  async function toggleBookmark() {
+  async function handleBookmark() {
     const {
       data: { user },
     } = await supabase.auth.getUser();
-    if (!user) return alert("Log in to bookmark!");
+    if (!user) return alert("Please login to bookmark this post.");
 
     setBookmarked(!bookmarked);
+
     if (bookmarked) {
       await supabase
         .from("bookmarks")
@@ -95,49 +95,43 @@ export function EngagementBar({
     }
   }
 
-  const scrollToComments = () => {
-    document
-      .getElementById("discussion")
-      ?.scrollIntoView({ behavior: "smooth" });
-  };
-
   return (
-    <div className="flex items-center justify-between border-t border-b border-zinc-100 py-3 text-zinc-500 max-w-2xl mx-auto px-2 my-6">
-      <div className="flex items-center gap-6">
-        {/* LIKES ACCUMULATOR */}
+    <div className="flex items-center justify-between border-t border-b border-zinc-100 py-4 my-8 text-zinc-500">
+      <div className="flex gap-8">
+        {/* Like Trigger */}
         <button
-          onClick={toggleLike}
-          className={`flex items-center gap-1.5 hover:text-red-500 transition-colors ${liked ? "text-red-500 font-bold" : ""}`}
+          onClick={handleLike}
+          className={`flex items-center gap-2 transition-colors hover:text-brand-orange ${liked ? "text-brand-orange" : ""}`}
         >
           <Heart
-            className={`h-5 w-5 ${liked ? "fill-red-500 text-red-500" : ""}`}
+            className={`h-5 w-5 ${liked ? "fill-brand-orange text-brand-orange" : ""}`}
           />
-          <span className="text-xs font-bold">{likesCount}</span>
+          <span className="text-sm font-medium">{likesCount}</span>
         </button>
 
-        {/* COMMENTS COUNTER DISPLAY */}
-        <button
-          onClick={scrollToComments}
-          className="flex items-center gap-1.5 hover:text-brand-orange transition-colors"
+        {/* Comment Link Anchor */}
+        <a
+          href="#comments"
+          className="flex items-center gap-2 transition-colors hover:text-zinc-800"
         >
           <MessageCircle className="h-5 w-5" />
-          <span className="text-xs font-bold">{initialComments}</span>
-        </button>
+          <span className="text-sm font-medium">{initialComments}</span>
+        </a>
 
-        {/* REPOSTS ACCUMULATOR */}
+        {/* Repost Trigger */}
         <button
-          onClick={toggleRepost}
-          className={`flex items-center gap-1.5 hover:text-green-500 transition-colors ${reposted ? "text-green-500 font-bold" : ""}`}
+          onClick={handleRepost}
+          className={`flex items-center gap-2 transition-colors hover:text-green-600 ${reposted ? "text-green-600" : ""}`}
         >
-          <Repeat2 className={`h-5 w-5 ${reposted ? "stroke-[2.5]" : ""}`} />
-          <span className="text-xs font-bold">{repostsCount}</span>
+          <Repeat2 className="h-5 w-5" />
+          <span className="text-sm font-medium">{repostsCount}</span>
         </button>
       </div>
 
-      {/* BOOKMARK ACCUMULATOR */}
+      {/* Bookmark Trigger */}
       <button
-        onClick={toggleBookmark}
-        className={`hover:text-brand-orange transition-colors ${bookmarked ? "text-brand-orange" : ""}`}
+        onClick={handleBookmark}
+        className={`transition-colors hover:text-zinc-800 ${bookmarked ? "text-brand-orange" : ""}`}
       >
         <Bookmark
           className={`h-5 w-5 ${bookmarked ? "fill-brand-orange text-brand-orange" : ""}`}
