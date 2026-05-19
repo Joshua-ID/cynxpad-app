@@ -5,7 +5,7 @@ import crypto from "crypto";
 export async function POST(req: Request) {
   const body = await req.json();
   const hash = crypto
-    .createHmac("sha512", process.env.PAYSTACK_SECRET_KEY!)
+    .createHmac("sha512", process.env.NEXT_PAYSTACK_SECRET_KEY!)
     .update(JSON.stringify(body))
     .digest("hex");
 

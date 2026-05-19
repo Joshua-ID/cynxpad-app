@@ -1,4 +1,5 @@
 import Navbar from "@/components/layout/navbar";
+import { StatsGrid } from "@/features/dashboard/components/starts-grid";
 
 export default function SocialLayout({
   children,

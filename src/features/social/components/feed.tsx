@@ -1,18 +1,27 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { useInView } from "react-intersection-observer";
 import { fetchFeedPosts } from "../services/feed-service";
 import { PostCard } from "./post-card";
 import { Loader2 } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
 
 export default function InfiniteFeed() {
+  const supabase = createClient();
   const { ref, inView } = useInView();
+  const [userId, setUserId] = useState<string | null>(null);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      if (data?.user) setUserId(data.user.id);
+    });
+  }, []);
 
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, status } =
     useInfiniteQuery({
-      queryKey: ["feed"],
+      queryKey: ["feed", userId],
       queryFn: ({ pageParam }) => fetchFeedPosts({ pageParam }),
       initialPageParam: undefined,
       getNextPageParam: (lastPage: any) =>
