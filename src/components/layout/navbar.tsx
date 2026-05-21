@@ -19,11 +19,17 @@ export default function Navbar() {
           >
             Explore
           </Link>
+          <Link
+            href="/marketplace"
+            className="text-sm font-medium hover:text-brand-orange transition-colors"
+          >
+            Marketplace
+          </Link>
 
           {role === "ghostwriter" && (
             <Link
               href="/dashboard/gigs"
-              className="text-sm font-medium text-brand-green"
+              className="text-sm font-medium text-emerald-600"
             >
               My Gigs
             </Link>
@@ -32,12 +38,15 @@ export default function Navbar() {
           {!profile ? (
             <Link
               href="/login"
-              className="rounded-full bg-brand-orange px-5 py-2 text-sm font-semibold text-white hover:bg-opacity-90"
+              className="rounded-full bg-brand-orange px-5 py-2 text-sm font-semibold text-white hover:brightness-110"
             >
               Get Started
             </Link>
           ) : (
-            <div className="h-8 w-8 rounded-full bg-zinc-200" /> /* Profile Dropdown */
+            <Link
+              href="/dashboard"
+              className="h-8 w-8 rounded-full bg-zinc-200 border border-zinc-300"
+            />
           )}
         </div>
       </div>
