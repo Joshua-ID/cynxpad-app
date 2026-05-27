@@ -12,7 +12,9 @@ export default async function GigDetailPage({
         <span className="bg-zinc-100 px-3 py-1 rounded-full text-xs font-bold">
           ₦ Price
         </span>
-        <span className="text-zinc-500 text-sm italic">Posted by Username</span>
+        <span className="text-zinc-500 text-sm italic">
+          Posted by Usernames
+        </span>
       </div>
 
       {/* Content */}

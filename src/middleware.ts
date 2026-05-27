@@ -1,4 +1,5 @@
-import { createServerClient, type CookieOptions } from "@supabase/ssr";
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 export async function middleware(request: NextRequest) {
@@ -16,22 +17,14 @@ export async function middleware(request: NextRequest) {
         get(name: string) {
           return request.cookies.get(name)?.value;
         },
-        set(name: string, value: string, options: CookieOptions) {
+        set(name: string, value: string, options: any) {
           request.cookies.set({ name, value, ...options });
-          response = NextResponse.next({
-            request: {
-              headers: request.headers,
-            },
-          });
+          response = NextResponse.next({ request });
           response.cookies.set({ name, value, ...options });
         },
-        remove(name: string, options: CookieOptions) {
+        remove(name: string, options: any) {
           request.cookies.set({ name, value: "", ...options });
-          response = NextResponse.next({
-            request: {
-              headers: request.headers,
-            },
-          });
+          response = NextResponse.next({ request });
           response.cookies.set({ name, value: "", ...options });
         },
       },
@@ -42,30 +35,33 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("onboarding_completed")
-    .eq("id", user?.id)
-    .single();
+  // 1. Protect all /dashboard routes
+  if (request.nextUrl.pathname.startsWith("/dashboard")) {
+    if (!user) {
+      return NextResponse.redirect(new URL("/login", request.url));
+    }
 
-  if (
-    profile &&
-    !profile.onboarding_completed &&
-    !request.nextUrl.pathname.startsWith("/onboarding")
-  ) {
-    return NextResponse.redirect(new URL("/onboarding", request.url));
-  }
+    // 2. Protect gig management routes specifically for ghostwriters
+    if (request.nextUrl.pathname.startsWith("/dashboard/gigs")) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", user.id)
+        .single();
 
-  // Protected routes logic
-  if (!user && request.nextUrl.pathname.startsWith("/dashboard")) {
-    return NextResponse.redirect(new URL("/login", request.url));
+      if (!profile || profile.role !== "ghostwriter") {
+        return NextResponse.redirect(new URL("/dashboard", request.url));
+      }
+    }
   }
 
   return response;
 }
 
+// Ensure middleware only runs on necessary routes to keep it performant
 export const config = {
   matcher: [
+    "/dashboard/:path*",
     "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };
